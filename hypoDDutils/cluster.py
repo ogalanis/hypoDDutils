@@ -12,16 +12,20 @@ class Cluster:
     """
 
     hypoDD_id = None
+    event_ids = []
     successful_relocation = False
     catalog = None
+    connectedness = None
     # TODO (@ogalanis) Add connectedness information
 
     def __init__(self):
         """ Initialization method for Cluster.
         """
         self.hypoDD_id = None
+        self.event_ids = None
         self.successful_relocation = False
         self.catalog = None
+        self.connectedness = None
 
 
 

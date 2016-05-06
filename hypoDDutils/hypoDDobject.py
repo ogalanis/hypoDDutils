@@ -9,6 +9,7 @@ from ph2dtInput import Ph2dtInput
 from hypoDDcontrol import HypoDDControl
 from hypoDDinput import HypoDDInput
 from cluster import Cluster
+from connectedness import Connectedness
 from obspy.core.utcdatetime import UTCDateTime
 import info
 
@@ -87,6 +88,9 @@ class HypoDDObject:
         results_file = "{}/{}".format(self.hypoDD_control.control_directory,
                               self.hypoDD_control.relocated_hypocenters_output
                               )
+        residuals_file = "{}/{}".format(self.hypoDD_control.control_directory,
+                                        self.hypoDD_control.data_residual_output
+                                        )
         with open(results_file, "r") as f:
             for line in f:
                 num = line.split()
@@ -117,6 +121,7 @@ class HypoDDObject:
                     clusters[-1].hypoDD_id=cid
                     clusters[-1].successful_relocation=True
                     clusters[-1].catalog=Catalog()
+                    clusters[-1].event_ids=[]
                 origin=Origin()
                 isec = int ( math.floor( sc ))
                 micsec = int ( ( sc - isec) * 1000000 )
@@ -136,9 +141,47 @@ class HypoDDObject:
                 event.magnitude.mag=mag
                 idx=cids.index(cid)
                 clusters[idx].catalog.events.append(event)
+                clusters[idx].event_ids.append(evid)
 
+        if self.hypoDD_control.cid != 0 :
+            my_list = []
+            clusters[0].connectedness = Connectedness()
+            with open(residuals_file, "r") as f:
+                for line in f:
+                    num = line.split()
+                    evid_1 = num[2]
+                    evid_2 = num[3]
+                    obs_type = num[4]
+                    if obs_type == "1":
+                        my_list = clusters[0].connectedness.cross_corr_P
+                    elif obs_type == "2":
+                        my_list = clusters[0].connectedness.cross_corr_S
+                    elif obs_type == "3":
+                        my_list = clusters[0].connectedness.catalog_P
+                    elif obs_type == "4":
+                        my_list = clusters[0].connectedness.catalog_S
+                    else:
+                        continue
+                    in_list = [x for x in my_list if (( x[0] == evid_1 and
+                                                        x[1] == evid_2
+                                                        ) or
+                                                      ( x[0] == evid_2 and
+                                                        x[1] == evid_1
+                                                        ))]
+                    if in_list:
+                        for x in my_list:
+                            if (( x[0] == evid_1 and
+                                  x[1] == evid_2
+                                  ) or
+                                ( x[0] == evid_2 and
+                                  x[1] == evid_1
+                                  )):
+                                x[2] += 1
+                    else:
+                        my_list.append([evid_1,evid_2,1])
 
         return clusters
+
 
 
 
